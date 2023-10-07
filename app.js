@@ -1,45 +1,59 @@
 const path = require('path')
+
 const express = require('express')
 const bodyParser = require('body-parser')
 const mongoose = require('mongoose')
-const errorController = require('./controllers/error')
-const adminRoutes = require('./routes/admin')
-const shopRoutes = require('./routes/shop')
 
-//set up
+const errorController = require('./controllers/error')
+const User = require('./models/user')
+
 const app = express()
+
 app.set('view engine', 'ejs')
 app.set('views', 'views')
 
-//set middleware
-app.use(express.static(path.join(__dirname, 'public')))
-// parse application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: false }))
-// parse application/json
-app.use(bodyParser.json())
-//form-data
+const adminRoutes = require('./routes/admin')
+const shopRoutes = require('./routes/shop')
+const authRoutes = require('./routes/auth')
 
-//Router
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(express.static(path.join(__dirname, 'public')))
+
+app.use((req, res, next) => {
+    User.find({})
+        .then((user) => {
+            req.user = user
+            next()
+        })
+        .catch((err) => console.log(err))
+})
+
 app.use('/admin', adminRoutes)
 app.use(shopRoutes)
+app.use(authRoutes)
 
-// get error page
 app.use(errorController.get404)
 
-//connect + listening
 mongoose
     .connect(
         'mongodb+srv://dnh:dnh@cluster0.jyt8pn6.mongodb.net/udemy_test?retryWrites=true&w=majority',
-        {
-            useUnifiedTopology: true,
-            useNewUrlParser: true,
-            useFindAndModify: false,
-        }
+        { useNewUrlParser: true, useUnifiedTopology: true }
     )
     .then((result) => {
-        console.log('Conneted to Database!')
+        User.findOne().then((user) => {
+            if (!user) {
+                const user = new User({
+                    name: 'Max',
+                    email: 'max@test.com',
+                    cart: {
+                        items: [],
+                    },
+                })
+                user.save()
+            }
+        })
         app.listen(3000, () => {
-            console.log('App listening...')
+            console.log('ok let go')
         })
     })
     .catch((err) => {
