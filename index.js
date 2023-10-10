@@ -1,48 +1,68 @@
 const express = require('express')
-const cookieParser = require('cookie-parser')
-const crypto = require('crypto')
+const session = require('express-session')
+const bodyParser = require('body-parser')
+
 const app = express()
-app.use(cookieParser())
+const port = 3000
 
-//
-const userStore = {}
-const secretKey = 'mysecretkey'
-function authenticateUser(req, res, next) {
-    const sessionId = req.cookies.sessionId
-    if (sessionId && userStore[sessionId]) {
-        req.user = userStore[sessionId]
-    }
-    next()
-}
-app.use(authenticateUser)
-//route
+app.use(
+    session({
+        secret: 'mysecretkey',
+        resave: false,
+        saveUninitialized: true,
+    })
+)
+app.use(bodyParser.urlencoded({ extended: true }))
+
 app.get('/', (req, res) => {
-    const sessionId = crypto.randomBytes(16).toString('hex')
-    const username = 'duongngochai'
-
-    userStore[sessionId] = { username }
-
-    res.cookie('sessionId', sessionId)
-    res.send('Dang nhap thanh cong')
+    if (req.session.username) {
+        // Hiển thị danh sách bài viết của người dùng đã đăng nhập
+        const userPosts = req.session.userPosts || []
+        res.send(`Welcome, ${req.session.username}!<br> Your Posts: ${userPosts.join(', ')}`)
+    } else {
+        res.send('Ban chua dang nhap')
+    }
 })
 
-app.get('/profile', (req, res) => {
-    if (req.user) {
-        res.send(`Username: ${req.user.username}`)
+app.get('/login', (req, res) => {
+    res.send(`
+    <form method="POST" action="/login">
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username"><br>
+      <input type="submit" value="Login">
+    </form>
+  `)
+})
+
+app.post('/login', (req, res) => {
+    // Xử lý đăng nhập và lưu trạng thái đăng nhập vào session
+    const username = req.body.username
+    if (username) {
+        req.session.username = username
+        req.session.userPosts = []
+        res.redirect('/')
     } else {
-        res.send('Vui long dang nhap')
+        res.send('Please enter a valid username.')
+    }
+})
+
+app.post('/post', (req, res) => {
+    if (req.session.username) {
+        // Thêm bài viết mới vào danh sách của người dùng
+        const newPost = req.body.post
+        req.session.userPosts.push(newPost)
+        res.redirect('/')
+    } else {
+        res.redirect('/login')
     }
 })
 
 app.get('/logout', (req, res) => {
-    const sessionId = req.cookies.sessionId
-    if (sessionId) {
-        delete userStore[sessionId]
-        res.clearCookie('sessionId')
-    }
-    res.send('Da dang xuat!')
+    // Xóa trạng thái đăng nhập từ session
+    req.session.destroy()
+    res.redirect('/login')
 })
 
-app.listen(3000, () => {
-    console.log('App running...')
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`)
 })
