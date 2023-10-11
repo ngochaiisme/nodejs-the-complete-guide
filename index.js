@@ -17,7 +17,6 @@ const app = express()
 // )
 
 // Sử dụng bodyParser để xử lý dữ liệu POST
-app.use(bodyParser.urlencoded({ extended: false }))
 
 // Sử dụng csurf middleware với cấu hình sử dụng session
 app.use(cookieParser())
@@ -27,6 +26,7 @@ const csrfProtection = csurf({
 })
 
 // Gắn middleware csrfProtection cho tất cả các route cần bảo vệ
+app.use(bodyParser.urlencoded({ extended: true }))
 app.use(csrfProtection)
 
 app.get('/', (req, res) => {
