@@ -1,48 +1,52 @@
 const express = require('express')
+const session = require('express-session')
+const csurf = require('csurf')
+const bodyParser = require('body-parser')
 const cookieParser = require('cookie-parser')
-const crypto = require('crypto')
+
 const app = express()
+
+//Sử dụng express-session để quản lý session
+// app.use(
+//     session({
+//         secret: 'dnh', //
+//         resave: false,
+//         saveUninitialized: true,
+//         cookie: { secure: false }, //tắt yêu cầu HTTPS
+//     })
+// )
+
+// Sử dụng bodyParser để xử lý dữ liệu POST
+
+// Sử dụng csurf middleware với cấu hình sử dụng session
 app.use(cookieParser())
 
-//
-const userStore = {}
-const secretKey = 'mysecretkey'
-function authenticateUser(req, res, next) {
-    const sessionId = req.cookies.sessionId
-    if (sessionId && userStore[sessionId]) {
-        req.user = userStore[sessionId]
-    }
-    next()
-}
-app.use(authenticateUser)
-//route
+const csrfProtection = csurf({
+    cookie: true, //
+})
+
+// Gắn middleware csrfProtection cho tất cả các route cần bảo vệ
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(csrfProtection)
+
 app.get('/', (req, res) => {
-    const sessionId = crypto.randomBytes(16).toString('hex')
-    const username = 'duongngochai'
-
-    userStore[sessionId] = { username }
-
-    res.cookie('sessionId', sessionId)
-    res.send('Dang nhap thanh cong')
+    // Lấy CSRF token từ session
+    const csrfToken = req.csrfToken()
+    res.send(`
+    <h1>Truy cập được</h1>
+    <form method="post" action="/process">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
+      <input type="text" name="data" placeholder="Data">
+      <button type="submit">Submit</button>
+    </form>
+  `)
 })
 
-app.get('/profile', (req, res) => {
-    if (req.user) {
-        res.send(`Username: ${req.user.username}`)
-    } else {
-        res.send('Vui long dang nhap')
-    }
-})
-
-app.get('/logout', (req, res) => {
-    const sessionId = req.cookies.sessionId
-    if (sessionId) {
-        delete userStore[sessionId]
-        res.clearCookie('sessionId')
-    }
-    res.send('Da dang xuat!')
+app.post('/process', (req, res) => {
+    const data = req.body.data
+    res.send(`Dữ liệu đã được xử lý: ${data}`)
 })
 
 app.listen(3000, () => {
-    console.log('App running...')
+    console.log('Server đang chạy trên cổng 3000')
 })
