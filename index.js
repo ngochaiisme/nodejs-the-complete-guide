@@ -1,52 +1,34 @@
-const express = require('express')
-const session = require('express-session')
-const csurf = require('csurf')
-const bodyParser = require('body-parser')
-const cookieParser = require('cookie-parser')
+const nodemailer = require('nodemailer')
 
-const app = express()
-
-//Sử dụng express-session để quản lý session
-// app.use(
-//     session({
-//         secret: 'dnh', //
-//         resave: false,
-//         saveUninitialized: true,
-//         cookie: { secure: false }, //tắt yêu cầu HTTPS
-//     })
-// )
-
-// Sử dụng bodyParser để xử lý dữ liệu POST
-
-// Sử dụng csurf middleware với cấu hình sử dụng session
-app.use(cookieParser())
-
-const csrfProtection = csurf({
-    cookie: true, //
+// Tạo một transporter (cài đặt dịch vụ email và sử dụng Mật khẩu ứng dụng)
+const transporter = nodemailer.createTransport({
+    service: 'Gmail',
+    auth: {
+        user: 'haitacdz007@gmail.com',
+        pass: 'gkbo yatj wisj qlve', // Sử dụng Mật khẩu ứng dụng đã tạo
+    },
 })
 
-// Gắn middleware csrfProtection cho tất cả các route cần bảo vệ
-app.use(bodyParser.urlencoded({ extended: true }))
-app.use(csrfProtection)
+// Cấu hình nội dung email với hình ảnh và hiệu ứng
+const mailOptions = {
+    from: 'Shop Rose <shoprose@rose.com>',
+    to: 'dngochai0511@gmail.com',
+    subject: 'Xác thực tài khoản của bạn',
+    html: `
+        <p>Xin chào bạn,</p>
+        <p>Vui lòng nhấp vào liên kết dưới đây để xác thực tài khoản của bạn:</p>
+        <a href="https://facebook.com/ngochai0511">Xác thực tài khoản</a>
+        <p>Nếu bạn không yêu cầu xác thực, bạn có thể bỏ qua email này.</p>
+        <img src="https://d2vrvpw63099lz.cloudfront.net/whatsapp-business-account-verifizieren/whatsapp-unternehmensaccount-verifizieren.png" alt="Hình ảnh chuyên nghiệp" style="width: 300px; height: auto;">
 
-app.get('/', (req, res) => {
-    // Lấy CSRF token từ session
-    const csrfToken = req.csrfToken()
-    res.send(`
-    <h1>Truy cập được</h1>
-    <form method="post" action="/process">
-      <input type="hidden" name="_csrf" value="${csrfToken}">
-      <input type="text" name="data" placeholder="Data">
-      <button type="submit">Submit</button>
-    </form>
-  `)
-})
+    `,
+}
 
-app.post('/process', (req, res) => {
-    const data = req.body.data
-    res.send(`Dữ liệu đã được xử lý: ${data}`)
-})
-
-app.listen(3000, () => {
-    console.log('Server đang chạy trên cổng 3000')
+// Gửi email
+transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+        console.log('Gửi email thất bại: ' + error)
+    } else {
+        console.log('Email đã được gửi: ' + info.response)
+    }
 })
