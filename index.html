@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Dummy Page</title>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    </head>
+    <body>
+        <h1>Dummy Page</h1>
+        <form method="POST" action="/login" id="login-form">
+            <label for="email">Email:</label>
+            <input type="text" id="email" name="email" /><br />
+            <div id="message" style="display: none"></div>
+            <input type="button" id="login-button" value="Login" />
+        </form>
+
+        <script>
+            $(document).ready(function () {
+                $('#login-button').click(function () {
+                    var email = $('#email').val()
+
+                    $.ajax({
+                        type: 'POST',
+                        url: '/login',
+                        data: { email: email },
+                        success: function (response) {
+                            // Xử lý thành công - hiển thị thông báo
+                            $('#message').text('Thành công: ' + JSON.stringify(response))
+                            $('#message').css('color', 'green')
+                            $('#message').show()
+                        },
+                        error: function (response) {
+                            // Xử lý lỗi - hiển thị thông báo lỗi
+                            $('#message').text(
+                                'Lỗi: ' + JSON.stringify(response.responseJSON.errors)
+                            )
+                            $('#message').css('color', 'red')
+                            $('#message').show()
+                        },
+                    })
+                })
+            })
+        </script>
+    </body>
+</html>
